@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "environment"
+version = "0.1.0"
+description = "Starter Python project for Raspberry Pi 4"
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+packages = [{ include = "environment" }]
+
+[tool.poetry.dependencies]
+python = ">=3.11,<4.0"
+smbus2 = "^0.6.1"
+rpi-bme280 = "^0.2.4"
+paho-mqtt = "^2.1.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3"
+ruff = "^0.6"
+
+[tool.poetry.scripts]
+environment = "environment.main:main"
+
+[build-system]
+requires = ["poetry-core>=1.9.0"]
+build-backend = "poetry.core.masonry.api"
