@@ -4,8 +4,9 @@ Starter Python project managed with Poetry, tuned for Raspberry Pi 4 workflows.
 
 ## Documentation
 
-- [Developer Guide (Setup, Tests, Linting)](file:///Users/shurtado/Projects/edge-environment/docs/dev.md)
-- [Examples & Common Commands](file:///Users/shurtado/Projects/edge-environment/docs/examples.md)
+- [Zephyr Setup Guide](file:///Users/shurtado/Projects/environment-measures/docs/zephyr-setup.md)
+- [Compile & Test Guide](file:///Users/shurtado/Projects/environment-measures/docs/compile.md)
+- [Raspberry Pi Debugging Guide](file:///Users/shurtado/Projects/environment-measures/docs/rpi.md)
 
 ## Quick Reference
 
@@ -18,6 +19,15 @@ Starter Python project managed with Poetry, tuned for Raspberry Pi 4 workflows.
 | **Run using YAML configuration** | `poetry run environment read --config <file-path>` |
 | **Run for specific duration** | `poetry run environment read --config <file-path> --duration <seconds>` |
 | **Start MQTT broker** | `docker compose -f containers/mosquitto/docker-compose.yml up -d` |
+
+## Development on Raspberry Pi
+
+1. Configure connection details in `.env` (use `.env.example` as a template).
+2. Sync the firmware folder to your Raspberry Pi:
+
+```bash
+make push
+```
 
 
 

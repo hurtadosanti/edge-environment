@@ -1,44 +1,45 @@
 # Setup Zephyr
 
-## For Ubuntu
+Follow these steps to set up the Zephyr development environment. Only Step 1 differs depending on your host OS; Steps 2, 3, and 4 are identical for both platforms.
 
-Only Step 1 changes. You must replace the macOS Homebrew command with Ubuntu's `apt` package manager and its specific native dependencies.
+---
+
+## 1. Install Host Dependencies
+
+Select the tab/section below corresponding to your host operating system:
+
+### Option A: For Ubuntu / Debian / Raspberry Pi OS
 
 Additionally, Linux requires configuring `udev` rules so your standard user account can access the USB ports for flashing and debugging hardware like the Raspberry Pi Pico without requiring `sudo` every time.
 
-### 1. Install Host Dependencies
-
 ```bash
+# 1a. Install packages
 sudo apt update
 sudo apt install -y --no-install-recommends git cmake ninja-build gperf \
   ccache dfu-util device-tree-compiler wget \
   python3-dev python3-pip python3-setuptools python3-tk python3-wheel python3-venv \
-  xz-utils file make gcc gcc-multilib g++-multilib libsdl2-dev libmagic1 openocd
-```
+  xz-utils file make gcc libsdl2-dev libmagic1 openocd
 
-### 1b. Configure udev Rules (Ubuntu Specific)
+# (Note: On x86_64 architectures, you may also need to append gcc-multilib and g++-multilib to the list above)
 
-```bash
-# Download and apply standard OpenOCD udev rules for hardware debuggers
+# 1b. Configure udev Rules (for USB debugging)
 wget https://raw.githubusercontent.com/zephyrproject-rtos/openocd/master/contrib/60-openocd.rules
 sudo cp 60-openocd.rules /etc/udev/rules.d/
 sudo udevadm control --reload-rules
 sudo udevadm trigger
 ```
 
-Steps 2, 3, and 4 below remain exactly the same.
-
----
-
-## For macOS
-
-### 1. Install Host Dependencies
+### Option B: For macOS
 
 ```bash
 brew install cmake ninja gperf python3 python-tk ccache qemu dtc libmagic wget openocd
 ```
 
-### 2. Set Up Virtual Environment & Workspace
+---
+
+## 2. Set Up Virtual Environment & Workspace
+
+*(Applicable to both Linux and macOS)*
 
 ```bash
 mkdir ~/zephyrproject
@@ -48,7 +49,11 @@ source .venv/bin/activate
 pip install west
 ```
 
-### 3. Initialize and Fetch
+---
+
+## 3. Initialize and Fetch
+
+*(Applicable to both Linux and macOS)*
 
 ```bash
 west init .
@@ -58,7 +63,11 @@ west zephyr-export
 west packages pip --install
 ```
 
-### 4. Install Toolchain
+---
+
+## 4. Install Toolchain
+
+*(Applicable to both Linux and macOS)*
 
 ```bash
 cd zephyr
