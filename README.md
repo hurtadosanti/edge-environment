@@ -2,78 +2,18 @@
 
 Starter Python project managed with Poetry, tuned for Raspberry Pi 4 workflows.
 
-## Prerequisites
+## Documentation
 
-- Python 3.11+ installed (`python3 --version`)
-- Poetry installed
+- [Developer Guide (Setup, Tests, Linting)](file:///Users/shurtado/Projects/edge-environment/docs/dev.md)
+- [Examples & Common Commands](file:///Users/shurtado/Projects/edge-environment/docs/examples.md)
 
-Install Poetry (official installer):
+## Quick Reference
 
-```bash
-curl -sSL https://install.python-poetry.org | python3 -
-```
+| Task | Command |
+| :--- | :--- |
+| **Scan I2C bus** | `poetry run environment scan` |
+| **Read sensor** | `poetry run environment read` |
+| **Read & publish to MQTT** | `poetry run environment read --mqtt-host <broker-ip>` |
+| **Start MQTT broker** | `docker compose -f containers/mosquitto/docker-compose.yml up -d` |
 
-## Setup
 
-```bash
-poetry env use python3
-poetry install
-```
-
-If Poetry is not on your PATH in non-interactive shells, use:
-
-```bash
-~/.local/bin/poetry env use python3
-~/.local/bin/poetry install
-```
-
-## BME280 Sensor
-
-Install the sensor libraries in this project:
-
-```bash
-~/.local/bin/poetry add smbus2 RPi.bme280
-```
-
-Scan for I2C devices:
-
-```bash
-~/.local/bin/poetry run python scan_i2c.py
-```
-
-Run the sensor reader:
-
-```bash
-~/.local/bin/poetry run python read_sensor.py
-```
-
-Use the package main entrypoint:
-
-```bash
-~/.local/bin/poetry run environment scan
-~/.local/bin/poetry run environment read
-```
-
-Read and publish to MQTT:
-
-```bash
-~/.local/bin/poetry run environment read --mqtt-host 192.168.1.10 --mqtt-topic sensors/bme280
-```
-
-## Run tests
-
-```bash
-poetry run pytest
-```
-
-## Lint
-
-```bash
-poetry run ruff check .
-```
-
-## Notes for Raspberry Pi 4
-
-- Prefer system packages for heavy native deps when possible.
-- Keep your Python version aligned with what is available on the Pi.
-- If a package builds slowly, look for prebuilt wheels first.

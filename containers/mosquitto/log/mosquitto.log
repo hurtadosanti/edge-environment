@@ -1,0 +1,9 @@
+1780929259: mosquitto version 2.1.2 starting
+1780929259: Config loaded from /mosquitto/config/mosquitto.conf.
+1780929259: Bridge support available.
+1780929259: Persistence support available.
+1780929259: TLS support available.
+1780929259: TLS-PSK support available.
+1780929259: Websockets support available.
+1780929259: Opening ipv4 listen socket on port 1883.
+1780929259: mosquitto version 2.1.2 running
