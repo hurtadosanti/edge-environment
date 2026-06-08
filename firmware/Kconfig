@@ -1,0 +1,23 @@
+mainmenu "Edge Environment Firmware"
+
+config APP_WIFI_SSID
+    string "WiFi SSID"
+    default "Your_SSID"
+
+config APP_WIFI_PASSWORD
+    string "WiFi Password"
+    default "Your_Password"
+
+config APP_MQTT_BROKER_HOST
+    string "MQTT Broker Hostname/IP"
+    default "192.168.1.140"
+
+config APP_MQTT_BROKER_PORT
+    int "MQTT Broker Port"
+    default 1883
+
+config APP_MQTT_TOPIC
+    string "MQTT Topic"
+    default "sensors/bme280"
+
+source "Kconfig.zephyr"
