@@ -22,6 +22,36 @@ Read BME280 values and publish them to a specified MQTT broker:
 poetry run environment read --mqtt-host 192.168.1.10 --mqtt-topic sensors/bme280
 ```
 
+### Continuous Loop using a YAML Configuration File
+Alternatively, store settings in a YAML file (e.g., `config.yaml`). Unspecified settings will fallback to their defaults:
+
+```yaml
+mqtt_host: "192.168.1.10"
+continuous: true
+# Optional overrides (shown with default values):
+# poll_interval: 5.0
+# interval: 300.0
+# delta_temp: 0.5
+# delta_humidity: 2.0
+# delta_pressure: 1.0
+```
+
+
+And run it using the config file:
+```bash
+poetry run environment read --config config.yaml
+```
+
+To run it for a specific duration (e.g., 5 minutes / 300 seconds) instead of indefinitely, use `--duration`:
+
+```bash
+# Using CLI flags (runs for 5m, publishing at least every 60s):
+poetry run environment read --continuous --duration 300 --interval 60 --mqtt-host 192.168.1.10
+
+# Using a config file:
+poetry run environment read --config config.yaml --duration 300
+```
+
 ---
 
 ## MQTT Broker Examples
