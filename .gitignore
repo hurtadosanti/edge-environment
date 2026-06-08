@@ -4,3 +4,5 @@
 mosquitto.db
 mosquitto.log
 containers/mosquitto/log/mosquitto.log
+build/
+.cache/

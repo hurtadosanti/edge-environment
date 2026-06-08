@@ -10,17 +10,25 @@ LOG_MODULE_DECLARE(app, LOG_LEVEL_INF);
 static void mqtt_evt_handler(struct mqtt_client *const client,
                              const struct mqtt_evt *evt)
 {
+    MqttPublisher *pub = static_cast<MqttPublisher *>(client->user_data);
+
     switch (evt->type) {
     case MQTT_EVT_CONNACK:
         if (evt->param.connack.return_code != 0) {
             LOG_ERR("MQTT connection failed %d", evt->param.connack.return_code);
         } else {
             LOG_INF("MQTT client connected!");
+            if (pub) {
+                pub->set_connected(true);
+            }
         }
         break;
 
     case MQTT_EVT_DISCONNECT:
         LOG_INF("MQTT client disconnected %d", evt->result);
+        if (pub) {
+            pub->set_connected(false);
+        }
         break;
 
     case MQTT_EVT_PUBACK:
@@ -45,9 +53,9 @@ struct json_sensor_reading {
 };
 
 static const struct json_obj_descr json_descr[] = {
-    JSON_OBJ_DESCR_PRIM(struct json_sensor_reading, temperature, JSON_TOK_REAL),
-    JSON_OBJ_DESCR_PRIM(struct json_sensor_reading, humidity, JSON_TOK_REAL),
-    JSON_OBJ_DESCR_PRIM(struct json_sensor_reading, pressure, JSON_TOK_REAL),
+    JSON_OBJ_DESCR_PRIM(struct json_sensor_reading, temperature, JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_PRIM(struct json_sensor_reading, humidity, JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_PRIM(struct json_sensor_reading, pressure, JSON_TOK_NUMBER),
     JSON_OBJ_DESCR_PRIM(struct json_sensor_reading, address, JSON_TOK_NUMBER),
 };
 
@@ -72,6 +80,7 @@ void MqttPublisher::init_client() {
     // Client configuration
     client_.broker = &broker_addr_;
     client_.evt_cb = mqtt_evt_handler;
+    client_.user_data = this;
     client_.client_id.utf8 = (const uint8_t *)"zephyr_pico";
     client_.client_id.size = strlen("zephyr_pico");
     client_.password = NULL;
@@ -108,8 +117,7 @@ bool MqttPublisher::connect_broker() {
             return false;
         }
         
-        if (client_.internal.state == MQTT_STATE_CONNECTED) {
-            is_connected_ = true;
+        if (is_connected_) {
             return true;
         }
         
@@ -123,7 +131,7 @@ bool MqttPublisher::connect_broker() {
 void MqttPublisher::disconnect_broker() {
     if (!is_connected_) return;
 
-    mqtt_disconnect(&client_);
+    mqtt_disconnect(&client_, NULL);
     is_connected_ = false;
 }
 
@@ -178,4 +186,8 @@ void MqttPublisher::process() {
     if (is_connected_) {
         mqtt_input(&client_);
     }
+}
+
+void MqttPublisher::set_connected(bool connected) {
+    is_connected_ = connected;
 }

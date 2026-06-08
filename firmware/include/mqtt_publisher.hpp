@@ -10,6 +10,7 @@ public:
     void disconnect_broker();
     bool publish_reading(const SensorReading& reading);
     void process();
+    void set_connected(bool connected);
 
 private:
     struct mqtt_client client_;

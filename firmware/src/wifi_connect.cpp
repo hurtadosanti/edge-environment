@@ -13,7 +13,7 @@ static struct net_mgmt_event_callback wifi_cb;
 static struct net_mgmt_event_callback ipv4_cb;
 
 static void wifi_mgmt_handler(struct net_mgmt_event_callback *cb,
-                             uint32_t mgmt_event, struct net_if *iface)
+                             uint64_t mgmt_event, struct net_if *iface)
 {
     if (mgmt_event == NET_EVENT_WIFI_CONNECT_RESULT) {
         const struct wifi_status *status = (const struct wifi_status *)cb->info;
@@ -26,7 +26,7 @@ static void wifi_mgmt_handler(struct net_mgmt_event_callback *cb,
 }
 
 static void ipv4_mgmt_handler(struct net_mgmt_event_callback *cb,
-                             uint32_t mgmt_event, struct net_if *iface)
+                             uint64_t mgmt_event, struct net_if *iface)
 {
     if (mgmt_event == NET_EVENT_IPV4_ADDR_ADD) {
         LOG_INF("IPv4 address added successfully");
