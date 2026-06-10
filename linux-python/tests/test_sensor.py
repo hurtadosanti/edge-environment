@@ -66,3 +66,13 @@ def test_read_bme280_returns_structured_reading(monkeypatch: pytest.MonkeyPatch)
     assert reading.humidity == 40.1
     assert reading.pressure == 1013.2
     assert fake_bus.closed is True
+
+
+def test_read_bme280_demo_returns_mock_reading() -> None:
+    from environment.sensor import read_bme280_demo
+
+    reading = read_bme280_demo()
+    assert reading.address == 0x76
+    assert 19.0 <= reading.temperature <= 25.0
+    assert 44.0 <= reading.humidity <= 56.0
+    assert 1012.0 <= reading.pressure <= 1014.0

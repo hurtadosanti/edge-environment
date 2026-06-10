@@ -57,3 +57,21 @@ def read_bme280(bus_number: int = 1) -> SensorReading:
         )
     finally:
         bus.close()
+
+
+def read_bme280_demo() -> SensorReading:
+    import math
+    import random
+    import time
+
+    t = time.time()
+    temp = 22.0 + 2.0 * math.sin(t / 60.0) + random.uniform(-0.1, 0.1)
+    hum = 50.0 + 5.0 * math.cos(t / 60.0) + random.uniform(-0.5, 0.5)
+    press = 1013.25 + random.uniform(-0.2, 0.2)
+    return SensorReading(
+        temperature=temp,
+        humidity=hum,
+        pressure=press,
+        address=0x76,
+    )
+

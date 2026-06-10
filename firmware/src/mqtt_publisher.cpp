@@ -5,6 +5,29 @@
 #include <zephyr/logging/log.h>
 #include <string.h>
 
+#if defined(CONFIG_MQTT_LIB_TLS)
+#include <zephyr/net/tls_credentials.h>
+
+#define MQTT_TLS_SEC_TAG 1
+
+static const char ca_certificate[] = 
+#include "ca_cert.inc"
+;
+
+static int register_credentials(void)
+{
+    int rc = tls_credential_add(MQTT_TLS_SEC_TAG,
+                                TLS_CREDENTIAL_CA_CERTIFICATE,
+                                ca_certificate,
+                                sizeof(ca_certificate));
+    if (rc < 0 && rc != -EEXIST) {
+        LOG_ERR("Failed to register CA certificate: %d", rc);
+        return rc;
+    }
+    return 0;
+}
+#endif
+
 LOG_MODULE_DECLARE(app, LOG_LEVEL_INF);
 
 // Define a dedicated thread space for the MQTT network runner
@@ -83,8 +106,19 @@ void MqttPublisher::init_client() {
     client_.user_data = this;
     client_.client_id.utf8 = (const uint8_t *)"zephyr_pico";
     client_.client_id.size = strlen("zephyr_pico");
-    client_.password = NULL;
-    client_.user_name = NULL;
+
+    static struct mqtt_utf8 username_utf8;
+    static struct mqtt_utf8 password_utf8;
+
+    username_utf8.utf8 = (const uint8_t *)CONFIG_APP_MQTT_USERNAME;
+    username_utf8.size = strlen(CONFIG_APP_MQTT_USERNAME);
+
+    password_utf8.utf8 = (const uint8_t *)CONFIG_APP_MQTT_PASSWORD;
+    password_utf8.size = strlen(CONFIG_APP_MQTT_PASSWORD);
+
+    client_.user_name = &username_utf8;
+    client_.password = &password_utf8;
+
     client_.protocol_version = MQTT_VERSION_3_1_1;
     client_.keepalive = 60;
 
@@ -93,7 +127,27 @@ void MqttPublisher::init_client() {
     client_.tx_buf = tx_buffer_;
     client_.tx_buf_size = sizeof(tx_buffer_);
 
+#if defined(CONFIG_MQTT_LIB_TLS)
+    register_credentials();
+
+    static sec_tag_t sec_tag_list[] = { MQTT_TLS_SEC_TAG };
+    client_.transport.type = MQTT_TRANSPORT_SECURE;
+    struct mqtt_sec_config *tls_config = &client_.transport.tls;
+
+#if defined(CONFIG_APP_MQTT_TLS_VERIFY_REQUIRED)
+    tls_config->peer_verify = TLS_PEER_VERIFY_REQUIRED;
+#else
+    tls_config->peer_verify = TLS_PEER_VERIFY_NONE;
+#endif
+
+    tls_config->cipher_list = NULL;
+    tls_config->cipher_count = 0;
+    tls_config->sec_tag_list = sec_tag_list;
+    tls_config->sec_tag_count = ARRAY_SIZE(sec_tag_list);
+    tls_config->hostname = CONFIG_APP_MQTT_BROKER_HOST;
+#else
     client_.transport.type = MQTT_TRANSPORT_NON_SECURE;
+#endif
 }
 
 bool MqttPublisher::start() {

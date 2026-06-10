@@ -7,5 +7,13 @@ containers/mosquitto/log/mosquitto.log
 build/
 .cache/
 .env
+containers/alertmanager/telegram_token
 firmware/local.conf
 containers/victoriametrics-data/
+
+containers/mosquitto/config/passwd
+containers/mosquitto/config/certs/ca.crt
+containers/mosquitto/config/certs/ca.key
+containers/mosquitto/config/certs/server.crt
+containers/mosquitto/config/certs/server.key
+firmware/src/ca_cert.inc

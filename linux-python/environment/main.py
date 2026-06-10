@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 
 from environment.mqtt_client import publish_reading
-from environment.sensor import read_bme280, scan_i2c
+from environment.sensor import read_bme280, scan_i2c, read_bme280_demo
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -26,6 +26,11 @@ def build_parser() -> argparse.ArgumentParser:
     read_parser.add_argument("--delta-pressure", type=float, help="Pressure delta threshold to force publication")
     read_parser.add_argument("--config", type=str, help="Path to YAML configuration file")
     read_parser.add_argument("--duration", type=float, help="Duration to run the loop in seconds (default: indefinitely)")
+    read_parser.add_argument("--demo", action="store_true", help="Use simulated demo sensor")
+    read_parser.add_argument("--mqtt-ca", type=str, help="Path to CA certificate for TLS")
+    read_parser.add_argument("--tls-insecure", action="store_true", help="Bypass hostname verification for TLS")
+    read_parser.add_argument("--mqtt-user", type=str, help="MQTT username")
+    read_parser.add_argument("--mqtt-password", type=str, help="MQTT password")
 
     return parser
 
@@ -62,6 +67,11 @@ def main() -> None:
         "delta_humidity": 2.0,
         "delta_pressure": 1.0,
         "duration": None,
+        "demo": False,
+        "mqtt_ca": None,
+        "tls_insecure": False,
+        "mqtt_user": None,
+        "mqtt_password": None,
     }
 
     def get_setting(key: str) -> any:
@@ -73,7 +83,6 @@ def main() -> None:
         return DEFAULTS[key]
 
     mqtt_host = get_setting("mqtt_host")
-    mqtt_port = get_setting("mqtt_port")
     mqtt_topic = get_setting("mqtt_topic")
     poll_interval = get_setting("poll_interval")
     interval = get_setting("interval")
@@ -81,6 +90,17 @@ def main() -> None:
     delta_humidity = get_setting("delta_humidity")
     delta_pressure = get_setting("delta_pressure")
     duration = get_setting("duration")
+    demo = get_setting("demo")
+    mqtt_ca = get_setting("mqtt_ca")
+    tls_insecure = get_setting("tls_insecure")
+    mqtt_user = get_setting("mqtt_user")
+    mqtt_password = get_setting("mqtt_password")
+
+    raw_port = get_setting("mqtt_port")
+    if mqtt_ca and raw_port == 1883:
+        mqtt_port = 8883
+    else:
+        mqtt_port = raw_port
 
     # Infer continuous mode if any loop-specific settings are provided on the CLI or in the config
     has_loop_setting = any(
@@ -89,8 +109,15 @@ def main() -> None:
     )
     continuous = get_setting("continuous") or has_loop_setting
 
+    def read_current_sensor() -> any:
+        if demo:
+            return read_bme280_demo()
+          
+        # Only import smbus2 / read physical BME280 if not in demo mode
+        return read_bme280(bus_number=args.bus)
+
     if not continuous:
-        reading = read_bme280(bus_number=args.bus)
+        reading = read_current_sensor()
         print(f"Using BME280 at address: {hex(reading.address)}")
         print(f"Temperature: {reading.temperature:.2f} C")
         print(f"Humidity: {reading.humidity:.2f} %")
@@ -102,6 +129,10 @@ def main() -> None:
                 host=mqtt_host,
                 port=mqtt_port,
                 topic=mqtt_topic,
+                ca_path=mqtt_ca,
+                tls_insecure=tls_insecure,
+                username=mqtt_user,
+                password=mqtt_password,
             )
             print(f"Published reading to MQTT topic '{mqtt_topic}' at {mqtt_host}:{mqtt_port}")
         return
@@ -129,7 +160,7 @@ def main() -> None:
                 break
 
             try:
-                reading = read_bme280(bus_number=args.bus)
+                reading = read_current_sensor()
                 if reading_filter.should_publish(reading):
                     print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] New measurement published:")
                     print(f"  Temperature: {reading.temperature:.2f} C")
@@ -142,6 +173,10 @@ def main() -> None:
                             host=mqtt_host,
                             port=mqtt_port,
                             topic=mqtt_topic,
+                            ca_path=mqtt_ca,
+                            tls_insecure=tls_insecure,
+                            username=mqtt_user,
+                            password=mqtt_password,
                         )
                         print(f"  Published to MQTT topic '{mqtt_topic}' at {mqtt_host}:{mqtt_port}")
             except Exception as e:
