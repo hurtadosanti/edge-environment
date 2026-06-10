@@ -60,16 +60,21 @@ bool wifi_connect()
 
     LOG_INF("Connecting to SSID: %s...", CONFIG_APP_WIFI_SSID);
     
+    bool success = true;
     if (net_mgmt(NET_REQUEST_WIFI_CONNECT, iface, &params, sizeof(params))) {
         LOG_ERR("WiFi connection request failed immediately");
-        return false;
+        success = false;
+    } else {
+        // Wait up to 30 seconds for connection and IP assignment
+        if (k_sem_take(&wifi_connected_sem, K_SECONDS(30)) != 0) {
+            LOG_ERR("WiFi connection or DHCP timeout");
+            success = false;
+        }
     }
 
-    // Wait up to 30 seconds for connection and IP assignment
-    if (k_sem_take(&wifi_connected_sem, K_SECONDS(30)) != 0) {
-        LOG_ERR("WiFi connection or DHCP timeout");
-        return false;
-    }
+    // Clean up event callbacks to prevent corrupting lists on subsequent connects
+    net_mgmt_del_event_callback(&wifi_cb);
+    net_mgmt_del_event_callback(&ipv4_cb);
 
-    return true;
+    return success;
 }

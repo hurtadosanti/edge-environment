@@ -74,6 +74,6 @@ Using [MQTTX CLI](https://mqttx.app/cli) (EMQ's CLI client):
 
 - **Publish to topic:**
   ```bash
-  mqttx pub -t 'sensors/bme280' -h 'localhost' -p 1883 -m '{"temperature": 21.5, "humidity": 45.2, "pressure": 1013.25}'
+  mqttx pub -t 'sensors/bme280' -h '192.168.1.140' -p 1883 -m '{"temperature": 21.5, "humidity": 45.2, "pressure": 1013.25}'
   ```
 

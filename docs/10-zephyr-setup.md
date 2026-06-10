@@ -10,8 +10,6 @@ Select the tab/section below corresponding to your host operating system:
 
 ### Option A: For Ubuntu / Debian / Raspberry Pi OS
 
-Additionally, Linux requires configuring `udev` rules so your standard user account can access the USB ports for flashing and debugging hardware like the Raspberry Pi Pico without requiring `sudo` every time.
-
 ```bash
 # 1a. Install packages
 sudo apt update
@@ -21,9 +19,16 @@ sudo apt install -y --no-install-recommends git cmake ninja-build gperf \
   xz-utils file make gcc libsdl2-dev libmagic1 openocd
 
 # (Note: On x86_64 architectures, you may also need to append gcc-multilib and g++-multilib to the list above)
+```
 
-# 1b. Configure udev Rules (for USB debugging)
+#### Linux Post-Install: udev Rules
+Linux requires configuring `udev` rules so your standard user account can access the USB ports for flashing and debugging hardware like the Raspberry Pi Pico without requiring `sudo` every time.
+
+```bash
+# Download the standard rules
 wget https://raw.githubusercontent.com/zephyrproject-rtos/openocd/master/contrib/60-openocd.rules
+
+# Copy rules, reload, and trigger
 sudo cp 60-openocd.rules /etc/udev/rules.d/
 sudo udevadm control --reload-rules
 sudo udevadm trigger
@@ -57,10 +62,11 @@ pip install west
 
 ```bash
 west init .
-west update --narrow
-west blobs fetch hal_infineon
+# Only download the modules needed for Raspberry Pi Pico W
+west update --narrow cmsis_6 hal_rpi_pico hal_infineon
 west zephyr-export
 west packages pip --install
+west blobs fetch hal_infineon
 ```
 
 ---

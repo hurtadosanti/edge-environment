@@ -7,3 +7,5 @@ containers/mosquitto/log/mosquitto.log
 build/
 .cache/
 .env
+firmware/local.conf
+containers/victoriametrics-data/

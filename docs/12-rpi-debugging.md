@@ -20,17 +20,9 @@ ls -l /dev/bus/usb/001/003
 
 ## 2. Configure udev Rules
 
-To run OpenOCD as a standard user without `sudo`, install the OpenOCD `udev` rules:
+To run OpenOCD as a standard user without `sudo`, ensure you have configured the OpenOCD `udev` rules on your host machine.
 
-```bash
-# Download the standard rules
-wget https://raw.githubusercontent.com/zephyrproject-rtos/openocd/master/contrib/60-openocd.rules
-
-# Copy rules, reload, and trigger
-sudo cp 60-openocd.rules /etc/udev/rules.d/
-sudo udevadm control --reload-rules
-sudo udevadm trigger
-```
+See the **Linux Post-Install** section in the [Zephyr Setup Guide](10-zephyr-setup.md#linux-post-install-udev-rules) for detailed instructions.
 
 ## 3. Run OpenOCD
 

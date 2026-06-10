@@ -1,0 +1,29 @@
+groups:
+- name: SensorAlerts
+  rules:
+  - alert: HighTemperature
+    expr: temperature > 30
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High temperature detected on {{ $labels.address }}"
+      description: "Temperature is {{ $value | printf \"%.2f\" }}°C, which is above the threshold of 30°C."
+
+  - alert: SuddenTemperatureChange
+    expr: abs(changes(temperature[5m])) > 2
+    for: 1m
+    labels:
+      severity: info
+    annotations:
+      summary: "Sudden temperature change on {{ $labels.address }}"
+      description: "Temperature changed by more than 2°C in the last 5 minutes."
+
+  - alert: SensorOffline
+    expr: absent(temperature)
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Sensor offline: {{ $labels.address }}"
+      description: "No temperature data received for the last 5 minutes."

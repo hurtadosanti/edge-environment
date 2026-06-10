@@ -26,10 +26,16 @@ int main()
         return 0;
     }
 
-    // 3. Initialize MQTT Publisher
+    // 3. Initialize MQTT Publisher and start background thread
     MqttPublisher mqtt;
-    if (!mqtt.connect_broker()) {
-        LOG_ERR("Failed to connect to MQTT broker. But will retry in loop...");
+    if (!mqtt.start()) {
+        LOG_ERR("Failed to start MQTT background runner.");
+    } else {
+        // Wait up to 3 seconds for initial connection to avoid dropping first measurement
+        int wait_timeout = 30;
+        while (wait_timeout-- > 0 && !mqtt.get_connected()) {
+            k_sleep(K_MSEC(100));
+        }
     }
 
     // 4. Initialize Reading Filter
@@ -55,9 +61,6 @@ int main()
             LOG_ERR("Failed to read from BME280 sensor");
         }
         
-        // Process any pending MQTT network traffic
-        mqtt.process();
-
         k_sleep(K_SECONDS(5));
     }
     return 0;

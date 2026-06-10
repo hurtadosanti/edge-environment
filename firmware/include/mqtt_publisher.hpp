@@ -1,16 +1,19 @@
 #pragma once
 #include "sensor_reading.hpp"
 #include <zephyr/net/mqtt.h>
+#include <zephyr/kernel.h>
 
 class MqttPublisher {
 public:
     MqttPublisher();
     ~MqttPublisher();
+    bool start();
+    void stop();
     bool connect_broker();
     void disconnect_broker();
     bool publish_reading(const SensorReading& reading);
-    void process();
     void set_connected(bool connected);
+    bool get_connected();
 
 private:
     struct mqtt_client client_;
@@ -18,6 +21,10 @@ private:
     uint8_t rx_buffer_[256];
     uint8_t tx_buffer_[256];
     bool is_connected_;
+    bool should_run_;
+    struct k_mutex state_mutex_;
 
     void init_client();
+    void run_loop();
+    void process_network(int timeout_ms);
 };
