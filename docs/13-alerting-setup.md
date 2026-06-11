@@ -33,16 +33,23 @@ To receive alerts on Telegram, you need to create a bot and obtain a Chat ID.
     ```
 4.  In the JSON response, look for `"chat":{"id":XXXXXXXXX...}`. That number is your **Chat ID**.
 
-### 3. Update Alertmanager Configuration
-Open `containers/alertmanager/alertmanager.yml` and update the `telegram_configs` section:
+### 3. Securely Configure Alertmanager
+For security, we read the Telegram token from a git-ignored file. 
 
-```yaml
-receivers:
-- name: 'telegram'
-  telegram_configs:
-  - bot_token: 'PASTE_YOUR_TOKEN_HERE'
-    chat_id: PASTE_YOUR_CHAT_ID_HERE
-```
+1. Write the token to the token file:
+   ```bash
+   echo "YOUR_TELEGRAM_BOT_TOKEN" > containers/alertmanager/telegram_token
+   ```
+   *(Or fetch it dynamically from 1Password as described in the [1Password Credentials Setup Guide](1password-setup.md)).*
+
+2. Open `containers/alertmanager/alertmanager.yml` and configure `telegram_configs` to use the file:
+   ```yaml
+   receivers:
+   - name: 'telegram'
+     telegram_configs:
+     - bot_token_file: '/etc/alertmanager/telegram_token'
+       chat_id: 8584821168
+   ```
 
 ## Creating Alert Rules
 

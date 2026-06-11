@@ -52,28 +52,5 @@ poetry run environment read --continuous --duration 300 --interval 60 --mqtt-hos
 poetry run environment read --config config.yaml --duration 300
 ```
 
----
 
-## MQTT Broker Examples
-
-### Start Mosquitto Broker
-Start the local Mosquitto container:
-```bash
-docker compose -f containers/mosquitto/docker-compose.yml up -d
-```
-
-
-### Publish & Subscribe Examples
-
-Using [MQTTX CLI](https://mqttx.app/cli) (EMQ's CLI client):
-
-- **Subscribe to topic:**
-  ```bash
-  mqttx sub -t 'sensors/bme280' -h 'localhost' -p 1883
-  ```
-
-- **Publish to topic:**
-  ```bash
-  mqttx pub -t 'sensors/bme280' -h '192.168.1.140' -p 1883 -m '{"temperature": 21.5, "humidity": 45.2, "pressure": 1013.25}'
-  ```
 

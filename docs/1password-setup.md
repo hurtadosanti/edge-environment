@@ -20,12 +20,13 @@ To update the Mosquitto password file (`containers/mosquitto/config/passwd`) wit
 
 ```bash
 # 1. Fetch credentials from 1Password
-MQTT_USER=$(op read "op://Automation/environment-measures-mqtt-auth/username")
-MQTT_PASS=$(op read "op://Automation/environment-measures-mqtt-auth/password")
+export MQTT_USER=$(op read "op://Automation/environment-measures-mqtt-auth/username")
+export MQTT_PASS=$(op read "op://Automation/environment-measures-mqtt-auth/password")
 
-# 2. Hash the password and write to the passwd file
-PASS_HASH=$(openssl passwd -6 -salt yoursalt12345 "$MQTT_PASS" 2>/dev/null || openssl passwd -1 -salt yoursalt12345 "$MQTT_PASS")
-echo "${MQTT_USER}:${PASS_HASH}" > containers/mosquitto/config/passwd
+# 2. Generate the passwd file using the official Mosquitto container
+docker run --rm -v "$(pwd)/containers/mosquitto/config:/mosquitto/config" \
+  eclipse-mosquitto:2.1-alpine \
+  mosquitto_passwd -b -c /mosquitto/config/passwd "$MQTT_USER" "$MQTT_PASS"
 
 echo "Mosquitto passwd file updated."
 ```
