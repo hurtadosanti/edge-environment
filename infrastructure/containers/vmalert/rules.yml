@@ -21,9 +21,9 @@ groups:
 
   - alert: SensorOffline
     expr: absent(temperature)
-    for: 5m
+    for: 1h
     labels:
-      severity: critical
+      severity: warning
     annotations:
       summary: "Sensor offline: {{ $labels.address }}"
-      description: "No temperature data received for the last 5 minutes."
+      description: "No temperature data received for the last 1 hour."

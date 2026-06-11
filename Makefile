@@ -4,7 +4,7 @@ ifneq (,$(wildcard ./.env))
 endif
 
 # Default values if not specified in .env
-RPI_HOST ?= rpi-dev-01
+RPI_HOST ?= 192.168.1.95
 RPI_DIR ?= ~/projects/environment-measures
 CLOUD_HOST ?= santiago_hurtado@cloud-dev-01
 CLOUD_DIR ?= ~/environment-measures/containers
@@ -19,6 +19,7 @@ push:
 		--exclude '.ruff_cache' \
 		--exclude 'build' \
 		--exclude '.env' \
+		--exclude 'infrastructure/containers/victoriametrics-data' \
 		-e ssh ./ $(RPI_HOST):$(RPI_DIR)/
 
 .PHONY: cloud-push
@@ -27,8 +28,12 @@ cloud-push:
 		--exclude 'mosquitto/data' \
 		--exclude 'mosquitto/log' \
 		--exclude 'victoriametrics-data' \
-		-e ssh ./containers/ $(CLOUD_HOST):$(CLOUD_DIR)/
+		-e ssh ./infrastructure/containers/ $(CLOUD_HOST):$(CLOUD_DIR)/
 
 .PHONY: clear
 clear:
-	rm -rf containers/mosquitto/data containers/mosquitto/log containers/victoriametrics-data
+	rm -rf infrastructure/containers/mosquitto/data infrastructure/containers/mosquitto/log infrastructure/containers/victoriametrics-data
+
+.PHONY: build
+build:
+	west build -p always -b rpi_pico/rp2040/w firmware

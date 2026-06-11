@@ -42,8 +42,8 @@ rm -f server.csr server.ext ca.srl
 
 echo "Formatting CA cert as a C-string header for Zephyr..."
 # Produce ca_cert.inc under firmware/src/
-mkdir -p ../../../../firmware/src
-awk '{print "\"" $0 "\\n\""}' ca.crt > ../../../../firmware/src/ca_cert.inc
+mkdir -p ../../../../../firmware/src
+awk '{print "\"" $0 "\\n\""}' ca.crt > ../../../../../firmware/src/ca_cert.inc
 
 echo "Generating password file for Mosquitto..."
 # Try to generate SHA-512 crypt hash, fallback to MD5 crypt if -6 is not supported
