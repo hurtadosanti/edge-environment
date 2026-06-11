@@ -3,7 +3,10 @@
 #include <zephyr/net/socket.h>
 #include <zephyr/data/json.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/net/net_if.h>
 #include <string.h>
+
+LOG_MODULE_DECLARE(app, LOG_LEVEL_INF);
 
 #if defined(CONFIG_MQTT_LIB_TLS)
 #include <zephyr/net/tls_credentials.h>
@@ -28,10 +31,8 @@ static int register_credentials(void)
 }
 #endif
 
-LOG_MODULE_DECLARE(app, LOG_LEVEL_INF);
-
 // Define a dedicated thread space for the MQTT network runner
-K_THREAD_STACK_DEFINE(mqtt_worker_stack, 2048);
+K_THREAD_STACK_DEFINE(mqtt_worker_stack, 4096);
 static struct k_thread mqtt_worker_data;
 
 static void mqtt_evt_handler(struct mqtt_client *const client,
@@ -75,6 +76,7 @@ struct json_sensor_reading {
     double humidity;
     double pressure;
     int address;
+    const char *mac;
 };
 
 static const struct json_obj_descr json_descr[] = {
@@ -82,6 +84,7 @@ static const struct json_obj_descr json_descr[] = {
     JSON_OBJ_DESCR_PRIM(struct json_sensor_reading, humidity, JSON_TOK_DOUBLE_FP),
     JSON_OBJ_DESCR_PRIM(struct json_sensor_reading, pressure, JSON_TOK_DOUBLE_FP),
     JSON_OBJ_DESCR_PRIM(struct json_sensor_reading, address, JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_PRIM(struct json_sensor_reading, mac, JSON_TOK_STRING),
 };
 
 MqttPublisher::MqttPublisher() : is_connected_(false), should_run_(false) {
@@ -101,11 +104,26 @@ void MqttPublisher::init_client() {
     broker_addr_.sin_port = htons(CONFIG_APP_MQTT_BROKER_PORT);
     zsock_inet_pton(AF_INET, CONFIG_APP_MQTT_BROKER_HOST, &broker_addr_.sin_addr);
 
+    // Extract Wi-Fi MAC address
+    struct net_if *iface = net_if_get_default();
+    if (iface) {
+        struct net_linkaddr *link_addr = net_if_get_link_addr(iface);
+        if (link_addr && link_addr->len == 6) {
+            snprintk(mac_str_, sizeof(mac_str_), "%02X:%02X:%02X:%02X:%02X:%02X",
+                     link_addr->addr[0], link_addr->addr[1], link_addr->addr[2],
+                     link_addr->addr[3], link_addr->addr[4], link_addr->addr[5]);
+        } else {
+            strcpy(mac_str_, "00:00:00:00:00:00");
+        }
+    } else {
+        strcpy(mac_str_, "00:00:00:00:00:00");
+    }
+
     client_.broker = &broker_addr_;
     client_.evt_cb = mqtt_evt_handler;
     client_.user_data = this;
-    client_.client_id.utf8 = (const uint8_t *)"zephyr_pico";
-    client_.client_id.size = strlen("zephyr_pico");
+    client_.client_id.utf8 = (const uint8_t *)mac_str_;
+    client_.client_id.size = strlen(mac_str_);
 
     static struct mqtt_utf8 username_utf8;
     static struct mqtt_utf8 password_utf8;
@@ -132,7 +150,7 @@ void MqttPublisher::init_client() {
 
     static sec_tag_t sec_tag_list[] = { MQTT_TLS_SEC_TAG };
     client_.transport.type = MQTT_TRANSPORT_SECURE;
-    struct mqtt_sec_config *tls_config = &client_.transport.tls;
+    struct mqtt_sec_config *tls_config = &client_.transport.tls.config;
 
 #if defined(CONFIG_APP_MQTT_TLS_VERIFY_REQUIRED)
     tls_config->peer_verify = TLS_PEER_VERIFY_REQUIRED;
@@ -262,7 +280,8 @@ bool MqttPublisher::publish_reading(const SensorReading& reading) {
         .temperature = reading.temperature,
         .humidity = reading.humidity,
         .pressure = reading.pressure,
-        .address = reading.address
+        .address = reading.address,
+        .mac = mac_str_
     };
 
     char json_buf[128];

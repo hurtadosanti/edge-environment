@@ -25,3 +25,17 @@
          * If your module uses 0x76, change this to 0x76. */
     };
 };
+
+/ {
+    leds {
+        compatible = "gpio-leds";
+        tx_led: led_17 {
+            gpios = <&gpio0 17 GPIO_ACTIVE_LOW>;
+            label = "Transmit LED";
+        };
+    };
+
+    aliases {
+        tx-led = &tx_led;
+    };
+};

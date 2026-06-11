@@ -20,6 +20,7 @@ private:
     struct sockaddr_in broker_addr_;
     uint8_t rx_buffer_[256];
     uint8_t tx_buffer_[256];
+    char mac_str_[18];
     bool is_connected_;
     bool should_run_;
     struct k_mutex state_mutex_;
