@@ -32,6 +32,20 @@ def build_parser() -> argparse.ArgumentParser:
     read_parser.add_argument("--mqtt-user", type=str, help="MQTT username")
     read_parser.add_argument("--mqtt-password", type=str, help="MQTT password")
 
+    event_parser = subparsers.add_parser("event", help="Publish a window/sensor event")
+    event_parser.add_argument("--event", "-e", required=True, type=str, help="Event state: e.g. open, closed, 1, 0")
+    event_parser.add_argument("--timestamp", "-t", type=str, help="UNIX timestamp or human-readable format (e.g. 'YYYY-MM-DD HH:MM:SS')")
+    event_parser.add_argument("--mqtt-host", type=str, default="localhost", help="MQTT broker host")
+    event_parser.add_argument("--mqtt-port", type=int, default=1883, help="MQTT broker port")
+    event_parser.add_argument("--mqtt-topic", type=str, default="events/windows", help="MQTT topic")
+    event_parser.add_argument("--address", "-a", type=str, default="window_1", help="Device address label")
+    event_parser.add_argument("--mac", "-m", type=str, help="Device MAC address label")
+    event_parser.add_argument("--mqtt-ca", type=str, help="Path to CA certificate for TLS")
+    event_parser.add_argument("--tls-insecure", action="store_true", help="Bypass hostname verification for TLS")
+    event_parser.add_argument("--mqtt-user", type=str, help="MQTT username")
+    event_parser.add_argument("--mqtt-password", type=str, help="MQTT password")
+    event_parser.add_argument("--config", type=str, help="Path to YAML configuration file")
+
     return parser
 
 
@@ -47,6 +61,80 @@ def main() -> None:
 
         for address in devices:
             print(f"Device found at address: {hex(address)}")
+        return
+
+    if args.command == "event":
+        import time
+        from environment.mqtt_client import publish_event
+
+        # Load config if specified, CLI args take precedence
+        event_config: dict[str, any] = {}
+        if args.config:
+            from environment.config import load_yaml_config
+            event_config = load_yaml_config(args.config)
+
+        def get_event_setting(key: str, cli_val: any, default: any = None) -> any:
+            if cli_val is not None:
+                return cli_val
+            return event_config.get(key, default)
+
+        mqtt_host = get_event_setting("mqtt_host", args.mqtt_host)
+        mqtt_port_raw = get_event_setting("mqtt_port", args.mqtt_port, 1883)
+        mqtt_topic = get_event_setting("mqtt_topic", args.mqtt_topic, "events/windows")
+        mqtt_ca = get_event_setting("mqtt_ca", args.mqtt_ca)
+        tls_insecure = args.tls_insecure or event_config.get("tls_insecure", False)
+        mqtt_user = get_event_setting("mqtt_user", args.mqtt_user)
+        mqtt_password = get_event_setting("mqtt_password", args.mqtt_password)
+        mqtt_port = 8883 if mqtt_ca and mqtt_port_raw == 1883 else mqtt_port_raw
+
+        event_clean = args.event.strip().lower()
+        if event_clean in ("open", "opened", "1", "true"):
+            status_value = 1
+        elif event_clean in ("close", "closed", "0", "false"):
+            status_value = 0
+        elif event_clean in ("half-open", "half_open", "half", "tilted"):
+            status_value = 2
+        else:
+            try:
+                status_value = int(args.event)
+            except ValueError:
+                print(f"Error: Invalid event value '{args.event}'. Use 'open', 'closed', 'half-open', '1', '0', or '2'.")
+                return
+
+        if args.timestamp:
+            try:
+                timestamp_val = int(float(args.timestamp))
+            except ValueError:
+                from datetime import datetime
+                try:
+                    dt = datetime.fromisoformat(args.timestamp)
+                    timestamp_val = int(dt.timestamp())
+                except ValueError:
+                    print(f"Error: Invalid timestamp format '{args.timestamp}'. Use UNIX epoch or ISO format (e.g., 'YYYY-MM-DD HH:MM:SS').")
+                    return
+        else:
+            timestamp_val = int(time.time())
+
+        payload_dict = {
+            "status": status_value,
+            "timestamp": timestamp_val
+        }
+        if args.address:
+            payload_dict["address"] = args.address
+        if args.mac:
+            payload_dict["mac"] = args.mac
+
+        publish_event(
+            payload_dict=payload_dict,
+            host=mqtt_host,
+            port=mqtt_port,
+            topic=mqtt_topic,
+            ca_path=mqtt_ca,
+            tls_insecure=tls_insecure,
+            username=mqtt_user,
+            password=mqtt_password,
+        )
+        print(f"Published event '{args.event}' (status={status_value}) to MQTT topic '{mqtt_topic}'")
         return
 
     # Load config file if specified

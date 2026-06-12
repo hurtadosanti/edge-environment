@@ -17,3 +17,5 @@ infrastructure/containers/mosquitto/config/certs/ca.key
 infrastructure/containers/mosquitto/config/certs/server.crt
 infrastructure/containers/mosquitto/config/certs/server.key
 firmware/src/ca_cert.inc
+host-agent/config.yaml
+

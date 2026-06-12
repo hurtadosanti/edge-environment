@@ -29,7 +29,15 @@ def load_yaml_config(file_path: str) -> dict[str, any]:
                 val.startswith("'") and val.endswith("'")
             ):
                 val = val[1:-1]
-            elif val.lower() == "true":
+
+            # Expand environment variables
+            if isinstance(val, str) and val.startswith("$"):
+                env_name = val[1:]
+                if env_name.startswith("{") and env_name.endswith("}"):
+                    env_name = env_name[1:-1]
+                val = os.environ.get(env_name, "")
+
+            if val.lower() == "true":
                 val = True
             elif val.lower() == "false":
                 val = False

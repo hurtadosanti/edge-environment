@@ -42,6 +42,27 @@ poetry run environment read
 poetry run environment read --mqtt-host localhost --mqtt-topic sensors/bme280
 ```
 
+### Publish Events
+Get the current timestamp in a format you can edit:
+```bash
+date "+%Y-%m-%d %H:%M:%S"
+```
+
+Publish using `config.yaml` (which references `$MQTT_PASS` fetched from 1Password):
+```bash
+# Fetch credentials from 1Password
+export MQTT_PASS=$(op read "op://Automation/environment-measures-mqtt-auth/password")
+
+# Publish a window open event now
+poetry run environment event --event open --config config.yaml --address kitchen_window
+
+# Publish a window half-open event now
+poetry run environment event --event half-open --config config.yaml --address kitchen_window
+
+# Publish a closed event with a specific (edited) timestamp
+poetry run environment event --event closed --timestamp "2026-06-12 07:50:00" --config config.yaml --address kitchen_window
+```
+
 ### Continuous Loop with Filtering (YAML Config)
 Store configuration in `config.yaml` to specify thresholds and fallbacks:
 ```yaml

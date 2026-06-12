@@ -11,11 +11,16 @@ def export_metrics_to_csv(vm_host, output_file, hours):
     # VictoriaMetrics allows exporting PromQL query results as JSON
     print(f"Connecting to VictoriaMetrics at {vm_host}...")
     
-    # We query temperature, humidity, and pressure
-    metrics = ['temperature', 'humidity', 'pressure']
+    # We query temperature, humidity, pressure, and window status metrics mapping from VM metric names to CSV columns
+    metrics = {
+        'mqtt_consumer_temperature': 'temperature',
+        'mqtt_consumer_humidity': 'humidity',
+        'mqtt_consumer_pressure': 'pressure',
+        'mqtt_consumer_status': 'window_status'
+    }
     data_by_time_device = {}
     
-    for metric in metrics:
+    for metric, field in metrics.items():
         # Construct PromQL query to get data for the metric
         query = f'{metric}[{hours}h]'
         url_encoded_query = urllib.parse.urlencode({'query': query})
@@ -34,7 +39,7 @@ def export_metrics_to_csv(vm_host, output_file, hours):
                 for result in results:
                     # Extract tags (like mac/device_id and address)
                     metric_tags = result.get('metric', {})
-                    mac = metric_tags.get('mac') or metric_tags.get('client_id') or metric_tags.get('host') or 'unknown'
+                    mac = metric_tags.get('mac') or metric_tags.get('address') or metric_tags.get('client_id') or metric_tags.get('host') or 'unknown'
                     
                     # Values list contains [timestamp, value] pairs
                     values = result.get('values', [])
@@ -50,9 +55,10 @@ def export_metrics_to_csv(vm_host, output_file, hours):
                                 'device_mac': mac,
                                 'temperature': None,
                                 'humidity': None,
-                                'pressure': None
+                                'pressure': None,
+                                'window_status': None
                             }
-                        data_by_time_device[key][metric] = float(val)
+                        data_by_time_device[key][field] = float(val)
                         
         except Exception as e:
             print(f"Failed to fetch {metric}: {e}")
@@ -65,7 +71,7 @@ def export_metrics_to_csv(vm_host, output_file, hours):
     # Write to CSV
     print(f"Writing data to {output_file}...")
     with open(output_file, 'w', newline='') as f:
-        writer = csv.DictWriter(f, fieldnames=['timestamp', 'device_mac', 'temperature', 'humidity', 'pressure'])
+        writer = csv.DictWriter(f, fieldnames=['timestamp', 'device_mac', 'temperature', 'humidity', 'pressure', 'window_status'])
         writer.writeheader()
         
         # Sort by timestamp
@@ -81,5 +87,5 @@ if __name__ == '__main__':
     parser.add_argument('--output', default='sensor_data.csv', help="Output CSV file path (default: sensor_data.csv)")
     parser.add_argument('--hours', type=int, default=24, help="Number of hours of history to export (default: 24)")
     
-    args = parser.parse_argument_group().parser.parse_args()
+    args = parser.parse_args()
     export_metrics_to_csv(args.host, args.output, args.hours)

@@ -76,9 +76,29 @@ Alerts are defined in `infrastructure/containers/vmalert/rules.yml` using Metric
 
 * **Threshold Alert**: Triggers when temperature exceeds 30°C.
   ```yaml
-  expr: temperature > 30
+  expr: mqtt_consumer_temperature > 30
   ```
-* **Health Check**: Triggers if no data is received from the sensor for 5 minutes.
+* **Health Check**: Triggers if a device is offline (no data for 15 minutes) but was active within the last hour.
   ```yaml
-  expr: absent(temperature)
+  expr: last_over_time(mqtt_consumer_temperature[1h]) unless last_over_time(mqtt_consumer_temperature[15m])
   ```
+
+---
+
+## 5. Exporting Data for Machine Learning
+
+A Python script is provided at [export_csv.py](file:///Users/shurtado/Projects/environment-measures/scripts/export_csv.py) to fetch time series metrics from VictoriaMetrics and export them into a structured CSV file for ML model training.
+
+The script queries `temperature`, `humidity`, and `pressure`, matches them by timestamp and device MAC address (`mac` tag), and outputs them to a formatted file.
+
+### Usage
+
+From the root directory:
+```bash
+python3 scripts/export_csv.py --host <vm-host-ip>:8428 --hours <time-range-hours> --output <filename.csv>
+```
+
+Example (fetch last 24 hours of data from the Raspberry Pi broker):
+```bash
+python3 scripts/export_csv.py --host 192.168.1.95:8428 --hours 24 --output dataset.csv
+```

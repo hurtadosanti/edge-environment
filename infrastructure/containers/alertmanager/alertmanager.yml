@@ -17,12 +17,13 @@ receivers:
     send_resolved: true
     parse_mode: 'HTML'
     message: |
-      <b>{{ if eq .Status "firing" }}🔔 NOTIFICATION{{ else }}✅ RESOLVED{{ end }}</b>
-      {{ range .Alerts }}
+      {{ range .Alerts -}}
       {{ if eq .Status "firing" -}}
-      {{ if eq .Labels.severity "critical" }}🚨 <b>[CRITICAL]</b> {{ else if eq .Labels.severity "warning" }}⚠️ <b>[WARNING]</b> {{ else }}ℹ️ <b>[INFO]</b> {{ end -}}
-      {{- else -}}
-      ✅ [RESOLVED] {{ end -}}
-      <b>{{ .Annotations.summary }}</b>
+      {{ if eq .Labels.severity "critical" }}🚨{{ else if eq .Labels.severity "warning" }}⚠️{{ else }}ℹ️{{ end }} <b>{{ .Labels.alertname }}</b> on <b>{{ or .Labels.address "Device" }}</b>
+      {{- if .Annotations.description }}
       {{ .Annotations.description }}
+      {{- end }}
+      {{- else -}}
+      ✅ <b>RESOLVED</b> - <b>{{ .Labels.alertname }}</b> on <b>{{ or .Labels.address "Device" }}</b>
+      {{- end }}
       {{ end }}
