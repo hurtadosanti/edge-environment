@@ -1,16 +1,42 @@
 services:
+  traefik:
+    image: traefik:v3.0
+    container_name: traefik
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.mqtts.address=:8883"
+      # Let's Encrypt ACME Configuration
+      - "--certificatesresolvers.myresolver.acme.httpchallenge=true"
+      - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.myresolver.acme.email=${LE_EMAIL}"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "8883:8883"
+    volumes:
+      - letsencrypt_data:/letsencrypt
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+
   mosquitto:
     image: eclipse-mosquitto:2.1-alpine
     container_name: mosquitto-broker
-    ports:
-      - "8883:8883"
-      - "9001:9001"
     volumes:
-      - ./mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf
-      - ./mosquitto/config/certs:/mosquitto/config/certs:ro
-      - ./mosquitto/config/passwd:/mosquitto/config/passwd:ro
-      - ./mosquitto/data:/mosquitto/data
-      - ./mosquitto/log:/mosquitto/log
+      - ./mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./mosquitto/config/password_file:/mosquitto/config/password_file:ro
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_log:/mosquitto/log
+    expose:
+      - "1883"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.tcp.routers.mqtt.rule=HostSNI(`${MQTT_DOMAIN}`)"
+      - "traefik.tcp.routers.mqtt.entrypoints=mqtts"
+      - "traefik.tcp.routers.mqtt.tls=true"
+      - "traefik.tcp.routers.mqtt.tls.certresolver=myresolver"
+      - "traefik.tcp.services.mqtt.loadbalancer.server.port=1883"
     restart: unless-stopped
 
   victoriametrics:
@@ -19,11 +45,10 @@ services:
     ports:
       - "8428:8428"
     volumes:
-      - ./victoriametrics-data:/storage
+      - victoriametrics_data:/storage
     command:
       - "--storageDataPath=/storage"
       - "--httpListenAddr=:8428"
-    user: "1000:1000"
     restart: unless-stopped
 
   telegraf:
@@ -35,6 +60,8 @@ services:
       - /:/hostfs:ro
     environment:
       - HOST_MOUNT_PREFIX=/hostfs
+      - MQTT_USER=${MQTT_USER}
+      - MQTT_PASS=${MQTT_PASS}
     depends_on:
       - mosquitto
       - victoriametrics
@@ -62,6 +89,7 @@ services:
     volumes:
       - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
       - ./alertmanager/telegram_token:/etc/alertmanager/telegram_token
+      - alertmanager_data:/alertmanager
     command:
       - "--config.file=/etc/alertmanager/alertmanager.yml"
       - "--storage.path=/alertmanager"
@@ -69,3 +97,9 @@ services:
       - "9093:9093"
     restart: unless-stopped
 
+volumes:
+  mosquitto_data:
+  mosquitto_log:
+  victoriametrics_data:
+  alertmanager_data:
+  letsencrypt_data:
