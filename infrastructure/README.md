@@ -173,4 +173,24 @@ To compile the Let's Encrypt root CA certificate into the firmware:
    ```
 2. Build the firmware using `west` as usual. The firmware will now successfully trust and verify Traefik's Let's Encrypt certificate when connecting to your configured domain on port `8883`.
 
+---
+
+### Verifying Security & TLS
+
+To verify that TLS and authentication are working correctly on the cloud:
+
+#### 1. Verify TLS is Active (Check Certificate Chain)
+You can inspect the TLS handshake and verify the Let's Encrypt trust chain directly from your local machine:
+```bash
+openssl s_client -connect $MQTT_DOMAIN:8883 -showcerts
+```
+*Look for `Verification: OK` and `Verify return code: 0 (ok)` at the end of the output, which proves a valid secure handshake.*
+
+#### 2. Verify Authentication (Reject Unauthorized Access)
+Verify that the broker correctly rejects incorrect credentials:
+```bash
+mqttx pub -t "test/topic" -m "hack" -h "$MQTT_DOMAIN" -p 8883 -u "wronguser" -P "wrongpass" --protocol mqtts
+```
+*The command should fail immediately with `Error: Connection refused: Not authorized`, and you will see the rejection logged in the Mosquitto broker logs on the VM.*
+
 
